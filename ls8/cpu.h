@@ -5,7 +5,7 @@
 struct cpu
 {
   // PC
-  unsigned int PC;
+  unsigned int pc;
 
   // registers (array)
   unsigned char registers[8];

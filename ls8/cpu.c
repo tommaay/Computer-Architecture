@@ -30,6 +30,16 @@ void cpu_load(struct cpu *cpu)
   // TODO: Replace this with something less hard-coded
 }
 
+unsigned char cpu_ram_read(struct cpu *cpu, unsigned char pc)
+{
+  return cpu->ram[pc];
+}
+
+void cpu_ram_write(struct cpu *cpu, unsigned char mdr, unsigned char pc)
+{
+  cpu->ram[pc] = mdr;
+}
+
 /**
  * ALU
  */
@@ -56,11 +66,41 @@ void cpu_run(struct cpu *cpu)
   {
     // TODO
     // 1. Get the value of the current instruction (in address PC).
+    int IR = cpu_ram_read(cpu, cpu->pc); // instruction register
+
     // 2. Figure out how many operands this next instruction requires
+    int numOps = IR >> 6;
+
     // 3. Get the appropriate value(s) of the operands following this instruction
+    int ops[4];
+    for (int i = 0; i < numOps; i++)
+    {
+      ops[i] = cpu_ram_read(cpu, cpu->pc + 1 + i);
+    }
+
     // 4. switch() over it to decide on a course of action.
     // 5. Do whatever the instruction should do according to the spec.
+    switch (IR)
+    {
+    case LDI:
+      cpu->registers[ops[0]] = ops[1];
+      break;
+
+    case PRN:
+      printf("%d\n", cpu->registers[ops[0]]);
+      break;
+
+    case HLT:
+      running = 0;
+      break;
+
+    default:
+      printf("Unknown instruction at %d: %d\n", cpu->pc, IR);
+      exit(1);
+    }
+
     // 6. Move the PC to the next instruction.
+    cpu->pc += 1 + numOps;
   }
 }
 
@@ -70,14 +110,7 @@ void cpu_run(struct cpu *cpu)
 void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
-}
-
-unsigned char cpu_ram_read(struct cpu *cpu, unsigned char mar)
-{
-  return cpu->ram[mar];
-}
-
-void cpu_ram_write(struct cpu *cpu, unsigned char index, unsigned char mdr)
-{
-  cpu->ram[index] = mdr;
+  cpu->pc = 0;
+  memset(cpu->registers, 0, 8 * (sizeof(char)));
+  memset(cpu->ram, 0, 128 * sizeof(char));
 }
