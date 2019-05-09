@@ -59,10 +59,13 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   switch (op)
   {
   case ALU_MUL:
-    cpu->registers[regA] = cpu->registers[regA] * cpu->registers[regB];
+    cpu->reg[regA] = cpu->reg[regA] * cpu->reg[regB];
     break;
 
-    // TODO: implement more ALU ops
+  // TODO: implement more ALU ops
+  case ALU_ADD:
+    cpu->reg[regA] = cpu->reg[regA] + cpu->reg[regB];
+    break;
   }
 }
 
@@ -94,11 +97,11 @@ void cpu_run(struct cpu *cpu)
     switch (IR)
     {
     case LDI:
-      cpu->registers[ops[0]] = ops[1];
+      cpu->reg[ops[0]] = ops[1];
       break;
 
     case PRN:
-      printf("%d\n", cpu->registers[ops[0]]);
+      printf("%d\n", cpu->reg[ops[0]]);
       break;
 
     case HLT:
@@ -107,6 +110,51 @@ void cpu_run(struct cpu *cpu)
 
     case MUL:
       alu(cpu, ALU_MUL, ops[0], ops[1]);
+      break;
+
+    case ADD:
+      alu(cpu, ALU_ADD, ops[0], ops[1]);
+      break;
+
+    case PUSH:
+      // stack pointer = reg[7]
+      if (cpu->reg[7] == 0)
+      {
+        cpu->reg[7] = 0xF4;
+      }
+
+      cpu->reg[7]--;
+      cpu->ram[cpu->reg[7]] = cpu->reg[ops[0]];
+      break;
+
+    case POP:
+      if (cpu->reg[7] == 0 || cpu->reg[7] == 0xF4)
+      {
+        fprintf(stderr, "error: no items in stack!\n");
+        break;
+      }
+
+      cpu->reg[ops[0]] = cpu->ram[cpu->reg[7]];
+      cpu->reg[7]++;
+      break;
+
+    case CALL:
+      if (cpu->reg[7] == 0)
+      {
+        cpu->reg[7] = 0xF4;
+      }
+
+      cpu->reg[7]--;
+      cpu->ram[cpu->reg[7]] = cpu->pc + 2;
+
+      cpu->pc = cpu->reg[ops[0]] - 2;
+      break;
+
+    case RET:
+      cpu->pc = cpu->ram[cpu->reg[7]];
+      cpu->reg[7]++;
+      cpu->pc -= 1 + numOps;
+
       break;
 
     default:
@@ -126,6 +174,6 @@ void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
   cpu->pc = 0;
-  memset(cpu->registers, 0, 8 * (sizeof(char)));
-  memset(cpu->ram, 0, 128 * sizeof(char));
+  memset(cpu->reg, 0, 8 * (sizeof(char)));
+  memset(cpu->ram, 0, 256 * sizeof(char));
 }
