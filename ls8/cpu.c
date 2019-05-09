@@ -138,6 +138,25 @@ void cpu_run(struct cpu *cpu)
       cpu->reg[7]++;
       break;
 
+    case CALL:
+      if (cpu->reg[7] == 0)
+      {
+        cpu->reg[7] = 0xF4;
+      }
+
+      cpu->reg[7]--;
+      cpu->ram[cpu->reg[7]] = cpu->pc + 2;
+
+      cpu->pc = cpu->reg[ops[0]] - 2;
+      break;
+
+    case RET:
+      cpu->pc = cpu->ram[cpu->reg[7]];
+      cpu->reg[7]++;
+      cpu->pc -= 1 + numOps;
+
+      break;
+
     default:
       printf("Unknown instruction at %d: %d\n", cpu->pc, IR);
       exit(1);
